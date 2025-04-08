@@ -1,13 +1,24 @@
 
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// Sample initial movies for first-time setup only
-const initialMovies: Omit<Movie, "id">[] = [
+interface MovieContextType {
+  movies: Movie[];
+  loading: boolean;
+  error: string | null;
+  addMovie: (movie: Omit<Movie, "id">) => Promise<void>;
+  updateMovie: (movie: Movie) => Promise<void>;
+  deleteMovie: (id: string) => Promise<void>;
+}
+
+const MovieContext = createContext<MovieContextType | undefined>(undefined);
+
+// Sample movies for when database is not connected
+const sampleMovies: Movie[] = [
   {
+    id: "1",
     title: "The Shawshank Redemption",
     director: "Frank Darabont",
     year: 1994,
@@ -16,6 +27,7 @@ const initialMovies: Omit<Movie, "id">[] = [
     description: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency."
   },
   {
+    id: "2",
     title: "The Godfather",
     director: "Francis Ford Coppola",
     year: 1972,
@@ -24,6 +36,7 @@ const initialMovies: Omit<Movie, "id">[] = [
     description: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son."
   },
   {
+    id: "3",
     title: "The Dark Knight",
     director: "Christopher Nolan",
     year: 2008,
@@ -33,256 +46,166 @@ const initialMovies: Omit<Movie, "id">[] = [
   }
 ];
 
-// Supabase API functions
-const fetchMovies = async (): Promise<Movie[]> => {
-  console.log("Fetching movies from Supabase");
-  try {
-    const { data, error } = await supabase
-      .from('movies')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Error fetching movies:", error);
-      throw error;
-    }
-    
-    console.log("Movies fetched successfully:", data);
-    return data || [];
-  } catch (err) {
-    console.error("Error in fetchMovies:", err);
-    throw err;
-  }
-};
-
-const addMovieToDb = async (movie: Omit<Movie, "id">): Promise<Movie> => {
-  console.log("Adding movie to Supabase:", movie);
-  try {
-    const { data, error } = await supabase
-      .from('movies')
-      .insert(movie)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error("Error adding movie:", error);
-      throw error;
-    }
-    
-    console.log("Movie added successfully:", data);
-    return data;
-  } catch (err) {
-    console.error("Error in addMovieToDb:", err);
-    throw err;
-  }
-};
-
-const updateMovieInDb = async (movie: Movie): Promise<Movie> => {
-  console.log("Updating movie in Supabase:", movie);
-  try {
-    const { data, error } = await supabase
-      .from('movies')
-      .update(movie)
-      .eq('id', movie.id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error("Error updating movie:", error);
-      throw error;
-    }
-    
-    console.log("Movie updated successfully:", data);
-    return data;
-  } catch (err) {
-    console.error("Error in updateMovieInDb:", err);
-    throw err;
-  }
-};
-
-const deleteMovieFromDb = async (id: string): Promise<void> => {
-  console.log("Deleting movie from Supabase:", id);
-  try {
-    const { error } = await supabase
-      .from('movies')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error("Error deleting movie:", error);
-      throw error;
-    }
-    
-    console.log("Movie deleted successfully");
-  } catch (err) {
-    console.error("Error in deleteMovieFromDb:", err);
-    throw err;
-  }
-};
-
-// Check if the DB is empty and seed with initial data if needed
-const initializeDb = async (): Promise<void> => {
-  console.log("Initializing database");
-  try {
-    const { count, error } = await supabase
-      .from('movies')
-      .select('*', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error('Error checking movie count:', error);
-      return;
-    }
-    
-    console.log("Current movie count:", count);
-    
-    if (count === 0) {
-      console.log("No movies in database, adding initial movies");
-      // No movies in database, add initial movies
-      const { error: insertError } = await supabase
-        .from('movies')
-        .insert(initialMovies);
-      
-      if (insertError) {
-        console.error('Error initializing movies:', insertError);
-      } else {
-        console.log("Initial movies added successfully");
-      }
-    }
-  } catch (err) {
-    console.error("Error in initializeDb:", err);
-  }
-};
-
-interface MovieContextType {
-  movies: Movie[];
-  isLoading: boolean;
-  error: Error | null;
-  addMovie: (movie: Omit<Movie, "id">) => void;
-  updateMovie: (movie: Movie) => void;
-  deleteMovie: (id: string) => void;
-  getMovie: (id: string) => Movie | undefined;
-}
-
-const MovieContext = createContext<MovieContextType | undefined>(undefined);
-
 export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  // Initialize database with sample data if needed (only run once)
-  React.useEffect(() => {
-    console.log("Running initializeDb");
-    initializeDb().catch(err => {
-      console.error("Error during initialization:", err);
-    });
-  }, []);
-  
-  // Query to fetch movies from Supabase - FIXED: removed onError and implemented onSuccess/onError properly
-  const { 
-    data: movies = [], 
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ['movies'],
-    queryFn: fetchMovies,
-    retry: 1,
-    meta: {
-      onError: (err: Error) => {
-        console.error("Query error:", err);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [databaseConnected, setDatabaseConnected] = useState(false);
+
+  // Load movies from Supabase or use sample data if database not connected
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error } = await supabase.from('movies').select('*');
+        
+        if (error) {
+          console.error("Database error:", error);
+          // Show sample movies if database not connected
+          setMovies(sampleMovies);
+          setDatabaseConnected(false);
+          
+          toast({
+            title: "Using sample data",
+            description: "Unable to connect to database. Using sample data instead.",
+            variant: "default",
+          });
+        } else {
+          console.log("Movies loaded from database:", data);
+          setMovies(data || []);
+          setDatabaseConnected(true);
+        }
+      } catch (err) {
+        console.error("Failed to fetch movies:", err);
+        setMovies(sampleMovies);
+        setDatabaseConnected(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMovies();
+  }, [toast]);
+
+  // Add a movie
+  const addMovie = async (movie: Omit<Movie, "id">) => {
+    try {
+      setLoading(true);
+      
+      if (databaseConnected) {
+        const { data, error } = await supabase
+          .from('movies')
+          .insert(movie)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        setMovies(prev => [data, ...prev]);
         toast({
-          title: "Database Error",
-          description: "Could not connect to the movies database. Please check your Supabase configuration.",
-          variant: "destructive",
+          title: "Movie added",
+          description: `"${movie.title}" has been added.`,
+        });
+      } else {
+        // Simulate adding to sample data
+        const newMovie = {
+          ...movie,
+          id: (Math.random() * 1000).toString()
+        };
+        setMovies(prev => [newMovie, ...prev]);
+        toast({
+          title: "Movie added (sample mode)",
+          description: `"${movie.title}" has been added to sample data.`,
         });
       }
-    }
-  });
-  
-  // Mutation to add a movie
-  const addMovieMutation = useMutation({
-    mutationFn: addMovieToDb,
-    onSuccess: (newMovie) => {
-      queryClient.invalidateQueries({ queryKey: ['movies'] });
+    } catch (err: any) {
       toast({
-        title: "Movie Added",
-        description: `"${newMovie.title}" has been added to your collection.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to add movie: ${error.message}`,
+        title: "Error adding movie",
+        description: err.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-  });
-  
-  // Mutation to update a movie
-  const updateMovieMutation = useMutation({
-    mutationFn: updateMovieInDb,
-    onSuccess: (updatedMovie) => {
-      queryClient.invalidateQueries({ queryKey: ['movies'] });
-      toast({
-        title: "Movie Updated",
-        description: `"${updatedMovie.title}" has been updated.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update movie: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Mutation to delete a movie
-  const deleteMovieMutation = useMutation({
-    mutationFn: deleteMovieFromDb,
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['movies'] });
-      const movieTitle = movies.find(movie => movie.id === id)?.title || "Movie";
-      toast({
-        title: "Movie Deleted",
-        description: `"${movieTitle}" has been removed from your collection.`,
-        variant: "destructive",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete movie: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  const addMovie = (movieData: Omit<Movie, "id">) => {
-    addMovieMutation.mutate(movieData);
   };
 
-  const updateMovie = (updatedMovie: Movie) => {
-    updateMovieMutation.mutate(updatedMovie);
+  // Update a movie
+  const updateMovie = async (movie: Movie) => {
+    try {
+      setLoading(true);
+      
+      if (databaseConnected) {
+        const { error } = await supabase
+          .from('movies')
+          .update(movie)
+          .eq('id', movie.id);
+          
+        if (error) throw error;
+      }
+      
+      // Update local state regardless of database connection
+      setMovies(prev => prev.map(m => m.id === movie.id ? movie : m));
+      
+      toast({
+        title: "Movie updated",
+        description: `"${movie.title}" has been updated.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error updating movie",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteMovie = (id: string) => {
-    deleteMovieMutation.mutate(id);
-  };
-
-  const getMovie = (id: string) => {
-    return movies.find((movie) => movie.id === id);
+  // Delete a movie
+  const deleteMovie = async (id: string) => {
+    try {
+      setLoading(true);
+      
+      if (databaseConnected) {
+        const { error } = await supabase
+          .from('movies')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+      }
+      
+      // Remove from local state regardless of database connection
+      const movieTitle = movies.find(m => m.id === id)?.title || "Movie";
+      setMovies(prev => prev.filter(m => m.id !== id));
+      
+      toast({
+        title: "Movie deleted",
+        description: `"${movieTitle}" has been removed.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error deleting movie",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <MovieContext.Provider
-      value={{ 
-        movies, 
-        isLoading,
-        error: error as Error | null,
-        addMovie, 
-        updateMovie, 
-        deleteMovie, 
-        getMovie 
+      value={{
+        movies,
+        loading,
+        error,
+        addMovie,
+        updateMovie,
+        deleteMovie,
       }}
     >
       {children}
@@ -292,7 +215,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const useMovies = () => {
   const context = useContext(MovieContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useMovies must be used within a MovieProvider");
   }
   return context;
