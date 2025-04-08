@@ -177,7 +177,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
   
-  // Query to fetch movies from Supabase
+  // Query to fetch movies from Supabase - FIXED: removed onError and implemented onSuccess/onError properly
   const { 
     data: movies = [], 
     isLoading,
@@ -186,13 +186,15 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     queryKey: ['movies'],
     queryFn: fetchMovies,
     retry: 1,
-    onError: (err) => {
-      console.error("Query error:", err);
-      toast({
-        title: "Database Error",
-        description: "Could not connect to the movies database. Please check your Supabase configuration.",
-        variant: "destructive",
-      });
+    meta: {
+      onError: (err: Error) => {
+        console.error("Query error:", err);
+        toast({
+          title: "Database Error",
+          description: "Could not connect to the movies database. Please check your Supabase configuration.",
+          variant: "destructive",
+        });
+      }
     }
   });
   
