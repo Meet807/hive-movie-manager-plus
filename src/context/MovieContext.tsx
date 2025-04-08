@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext } from "react";
 import { Movie } from "@/types/movie";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -35,67 +35,121 @@ const initialMovies: Omit<Movie, "id">[] = [
 
 // Supabase API functions
 const fetchMovies = async (): Promise<Movie[]> => {
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .order('created_at', { ascending: false });
-  
-  if (error) throw error;
-  return data || [];
+  console.log("Fetching movies from Supabase");
+  try {
+    const { data, error } = await supabase
+      .from('movies')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching movies:", error);
+      throw error;
+    }
+    
+    console.log("Movies fetched successfully:", data);
+    return data || [];
+  } catch (err) {
+    console.error("Error in fetchMovies:", err);
+    throw err;
+  }
 };
 
 const addMovieToDb = async (movie: Omit<Movie, "id">): Promise<Movie> => {
-  const { data, error } = await supabase
-    .from('movies')
-    .insert(movie)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  console.log("Adding movie to Supabase:", movie);
+  try {
+    const { data, error } = await supabase
+      .from('movies')
+      .insert(movie)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error adding movie:", error);
+      throw error;
+    }
+    
+    console.log("Movie added successfully:", data);
+    return data;
+  } catch (err) {
+    console.error("Error in addMovieToDb:", err);
+    throw err;
+  }
 };
 
 const updateMovieInDb = async (movie: Movie): Promise<Movie> => {
-  const { data, error } = await supabase
-    .from('movies')
-    .update(movie)
-    .eq('id', movie.id)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  console.log("Updating movie in Supabase:", movie);
+  try {
+    const { data, error } = await supabase
+      .from('movies')
+      .update(movie)
+      .eq('id', movie.id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error updating movie:", error);
+      throw error;
+    }
+    
+    console.log("Movie updated successfully:", data);
+    return data;
+  } catch (err) {
+    console.error("Error in updateMovieInDb:", err);
+    throw err;
+  }
 };
 
 const deleteMovieFromDb = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('movies')
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
+  console.log("Deleting movie from Supabase:", id);
+  try {
+    const { error } = await supabase
+      .from('movies')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error("Error deleting movie:", error);
+      throw error;
+    }
+    
+    console.log("Movie deleted successfully");
+  } catch (err) {
+    console.error("Error in deleteMovieFromDb:", err);
+    throw err;
+  }
 };
 
 // Check if the DB is empty and seed with initial data if needed
 const initializeDb = async (): Promise<void> => {
-  const { count, error } = await supabase
-    .from('movies')
-    .select('*', { count: 'exact', head: true });
-  
-  if (error) {
-    console.error('Error checking movie count:', error);
-    return;
-  }
-  
-  if (count === 0) {
-    // No movies in database, add initial movies
-    const { error: insertError } = await supabase
+  console.log("Initializing database");
+  try {
+    const { count, error } = await supabase
       .from('movies')
-      .insert(initialMovies);
+      .select('*', { count: 'exact', head: true });
     
-    if (insertError) {
-      console.error('Error initializing movies:', insertError);
+    if (error) {
+      console.error('Error checking movie count:', error);
+      return;
     }
+    
+    console.log("Current movie count:", count);
+    
+    if (count === 0) {
+      console.log("No movies in database, adding initial movies");
+      // No movies in database, add initial movies
+      const { error: insertError } = await supabase
+        .from('movies')
+        .insert(initialMovies);
+      
+      if (insertError) {
+        console.error('Error initializing movies:', insertError);
+      } else {
+        console.log("Initial movies added successfully");
+      }
+    }
+  } catch (err) {
+    console.error("Error in initializeDb:", err);
   }
 };
 
@@ -116,8 +170,11 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const queryClient = useQueryClient();
   
   // Initialize database with sample data if needed (only run once)
-  useEffect(() => {
-    initializeDb();
+  React.useEffect(() => {
+    console.log("Running initializeDb");
+    initializeDb().catch(err => {
+      console.error("Error during initialization:", err);
+    });
   }, []);
   
   // Query to fetch movies from Supabase
@@ -128,6 +185,15 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   } = useQuery({
     queryKey: ['movies'],
     queryFn: fetchMovies,
+    retry: 1,
+    onError: (err) => {
+      console.error("Query error:", err);
+      toast({
+        title: "Database Error",
+        description: "Could not connect to the movies database. Please check your Supabase configuration.",
+        variant: "destructive",
+      });
+    }
   });
   
   // Mutation to add a movie
@@ -140,7 +206,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: `"${newMovie.title}" has been added to your collection.`,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: `Failed to add movie: ${error.message}`,
@@ -159,7 +225,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: `"${updatedMovie.title}" has been updated.`,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: `Failed to update movie: ${error.message}`,
@@ -180,7 +246,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         variant: "destructive",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: `Failed to delete movie: ${error.message}`,
