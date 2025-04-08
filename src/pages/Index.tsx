@@ -15,9 +15,10 @@ import { Plus, Search } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import MovieForm from "@/components/MovieForm";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
-  const { movies, addMovie, updateMovie, deleteMovie } = useMovies();
+  const { movies, isLoading, error, addMovie, updateMovie, deleteMovie } = useMovies();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
@@ -94,7 +95,24 @@ const Index = () => {
         </div>
       </header>
 
-      {filteredMovies.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="flex flex-col space-y-3">
+              <Skeleton className="h-[450px] w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex h-60 flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+          <p className="mb-4 text-lg text-destructive">
+            Error loading movies: {error.message}
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      ) : filteredMovies.length === 0 ? (
         <div className="flex h-60 flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
           <p className="mb-4 text-lg text-muted-foreground">
             {searchQuery ? "No movies found matching your search." : "Your movie collection is empty."}
