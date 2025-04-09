@@ -15,6 +15,7 @@ interface MovieContextType {
 
 const MovieContext = createContext<MovieContextType | undefined>(undefined);
 
+// Sample movies with corrected types
 const sampleMovies: Movie[] = [
   {
     id: "1",
@@ -79,12 +80,19 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         } else {
           console.log("Movies loaded from database:", data);
-          setMovies(data || []);
+          // Convert year from string to number if needed
+          const formattedData = data?.map(movie => ({
+            ...movie,
+            year: typeof movie.year === 'string' ? parseInt(movie.year) : movie.year,
+            rating: typeof movie.rating === 'string' ? parseFloat(movie.rating) : movie.rating
+          })) as Movie[] || [];
+          
+          setMovies(formattedData);
           setDatabaseConnected(true);
           
           toast({
             title: "Connected to Supabase",
-            description: `Successfully loaded ${data?.length || 0} movies from your database.`,
+            description: `Successfully loaded ${formattedData.length} movies from your database.`,
           });
         }
       } catch (err: any) {
@@ -114,7 +122,14 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         const { data, error } = await supabase
           .from('movies')
-          .insert(movie)
+          .insert({
+            title: movie.title,
+            director: movie.director,
+            year: movie.year.toString(), // Convert number to string for Supabase
+            rating: movie.rating,
+            poster: movie.poster,
+            description: movie.description
+          })
           .select()
           .single();
           
@@ -124,7 +139,14 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
         
         console.log("Movie added successfully:", data);
-        setMovies(prev => [data, ...prev]);
+        // Convert year back to number
+        const newMovie = {
+          ...data,
+          year: typeof data.year === 'string' ? parseInt(data.year) : data.year,
+          rating: typeof data.rating === 'string' ? parseFloat(data.rating) : data.rating
+        } as Movie;
+        
+        setMovies(prev => [newMovie, ...prev]);
         
         toast({
           title: "Movie added",
@@ -161,7 +183,14 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log("Updating movie in database:", movie);
         const { error } = await supabase
           .from('movies')
-          .update(movie)
+          .update({
+            title: movie.title,
+            director: movie.director,
+            year: movie.year.toString(), // Convert number to string for Supabase
+            rating: movie.rating,
+            poster: movie.poster,
+            description: movie.description
+          })
           .eq('id', movie.id);
           
         if (error) {

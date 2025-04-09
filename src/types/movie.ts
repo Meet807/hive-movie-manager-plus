@@ -2,9 +2,9 @@
 export interface Movie {
   id: string;
   title: string;
-  director: string;
+  director: string | null;
   year: number;
   rating: number;
-  poster: string;
-  description?: string;
+  poster: string | null;
+  description?: string | null;
 }
