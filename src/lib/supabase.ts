@@ -17,17 +17,30 @@ export const supabase = createClient<Database>(
 // Log connection status without blocking UI
 console.log('Supabase: Connecting to your database...');
 
+// Set up auth state listener
+const setupAuthListener = () => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event, session?.user?.id || 'No user');
+  });
+};
+
 // Test connection by making a simple query
-supabase
-  .from('movies')
-  .select('count()', { count: 'exact', head: true })
-  .then(({ count, error }) => {
+const testConnection = async () => {
+  try {
+    const { count, error } = await supabase
+      .from('movies')
+      .select('count()', { count: 'exact', head: true });
+    
     if (error) {
       console.error('Supabase connection error:', error.message);
     } else {
       console.log(`Supabase connected successfully! Found ${count} movies.`);
     }
-  })
-  .catch(err => {
-    console.error('Supabase connection failed:', err.message);
-  });
+  } catch (err) {
+    console.error('Supabase connection failed:', err instanceof Error ? err.message : String(err));
+  }
+};
+
+// Initialize Supabase connection
+setupAuthListener();
+testConnection();

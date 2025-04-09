@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MovieContextType {
   movies: Movie[];
@@ -15,7 +14,6 @@ interface MovieContextType {
 
 const MovieContext = createContext<MovieContextType | undefined>(undefined);
 
-// Sample movies for when database is not connected
 const sampleMovies: Movie[] = [
   {
     id: "1",
@@ -53,7 +51,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [error, setError] = useState<string | null>(null);
   const [databaseConnected, setDatabaseConnected] = useState(false);
 
-  // Load movies from Supabase
   useEffect(() => {
     const fetchMovies = async () => {
       try {
@@ -62,23 +59,21 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         console.log("Attempting to fetch movies from Supabase...");
         
-        // Add a small delay to ensure Supabase client is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const { data, error } = await supabase
           .from('movies')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('title', { ascending: true });
         
         if (error) {
           console.error("Database error:", error);
-          // Show sample movies if database not connected
           setMovies(sampleMovies);
           setDatabaseConnected(false);
           
           toast({
             title: "Using sample data",
-            description: "Unable to connect to database. Using sample data instead. Make sure you have created a 'movies' table in your Supabase project.",
+            description: "Unable to connect to database. Using sample data instead.",
             variant: "destructive",
           });
         } else {
@@ -109,7 +104,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchMovies();
   }, [toast]);
 
-  // Add a movie
   const addMovie = async (movie: Omit<Movie, "id">) => {
     try {
       setLoading(true);
@@ -117,15 +111,9 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (databaseConnected) {
         console.log("Adding movie to database:", movie);
         
-        // Add created_at field for new records
-        const movieWithTimestamp = {
-          ...movie,
-          created_at: new Date().toISOString()
-        };
-        
         const { data, error } = await supabase
           .from('movies')
-          .insert(movieWithTimestamp)
+          .insert(movie)
           .select()
           .single();
           
@@ -139,10 +127,9 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added",
-          description: `"${movie.title}" has been added to your database.`,
+          description: `"${movie.title}" has been added to your database.",
         });
       } else {
-        // Simulate adding to sample data
         const newMovie = {
           ...movie,
           id: (Math.random() * 1000).toString()
@@ -151,7 +138,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added (sample mode)",
-          description: `"${movie.title}" has been added to sample data.`,
+          description: `"${movie.title}" has been added to sample data.",
         });
       }
     } catch (err: any) {
@@ -165,7 +152,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Update a movie
   const updateMovie = async (movie: Movie) => {
     try {
       setLoading(true);
@@ -183,7 +169,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
       
-      // Update local state regardless of database connection
       setMovies(prev => prev.map(m => m.id === movie.id ? movie : m));
       
       toast({
@@ -201,7 +186,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Delete a movie
   const deleteMovie = async (id: string) => {
     try {
       setLoading(true);
@@ -222,7 +206,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
       
-      // Remove from local state regardless of database connection
       setMovies(prev => prev.filter(m => m.id !== id));
       
       toast({
