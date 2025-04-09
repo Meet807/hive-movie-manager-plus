@@ -53,14 +53,18 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [error, setError] = useState<string | null>(null);
   const [databaseConnected, setDatabaseConnected] = useState(false);
 
-  // Load movies from Supabase or use sample data if database not connected
+  // Load movies from Supabase
   useEffect(() => {
     const fetchMovies = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        const { data, error } = await supabase.from('movies').select('*');
+        console.log("Attempting to fetch movies from Supabase...");
+        const { data, error } = await supabase
+          .from('movies')
+          .select('*')
+          .order('created_at', { ascending: false });
         
         if (error) {
           console.error("Database error:", error);
@@ -70,18 +74,29 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
           toast({
             title: "Using sample data",
-            description: "Unable to connect to database. Using sample data instead.",
-            variant: "default",
+            description: "Unable to connect to database. Using sample data instead. Make sure you have created a 'movies' table in your Supabase project.",
+            variant: "destructive",
           });
         } else {
           console.log("Movies loaded from database:", data);
           setMovies(data || []);
           setDatabaseConnected(true);
+          
+          toast({
+            title: "Connected to Supabase",
+            description: `Successfully loaded ${data?.length || 0} movies from your database.`,
+          });
         }
       } catch (err) {
         console.error("Failed to fetch movies:", err);
         setMovies(sampleMovies);
         setDatabaseConnected(false);
+        
+        toast({
+          title: "Error connecting to database",
+          description: "Using sample data instead. Please check console for details.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -96,18 +111,24 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLoading(true);
       
       if (databaseConnected) {
+        console.log("Adding movie to database:", movie);
         const { data, error } = await supabase
           .from('movies')
           .insert(movie)
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error adding movie:", error);
+          throw error;
+        }
         
+        console.log("Movie added successfully:", data);
         setMovies(prev => [data, ...prev]);
+        
         toast({
           title: "Movie added",
-          description: `"${movie.title}" has been added.`,
+          description: `"${movie.title}" has been added to your database.`,
         });
       } else {
         // Simulate adding to sample data
@@ -116,6 +137,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           id: (Math.random() * 1000).toString()
         };
         setMovies(prev => [newMovie, ...prev]);
+        
         toast({
           title: "Movie added (sample mode)",
           description: `"${movie.title}" has been added to sample data.`,
@@ -138,12 +160,16 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLoading(true);
       
       if (databaseConnected) {
+        console.log("Updating movie in database:", movie);
         const { error } = await supabase
           .from('movies')
           .update(movie)
           .eq('id', movie.id);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating movie:", error);
+          throw error;
+        }
       }
       
       // Update local state regardless of database connection
@@ -169,22 +195,28 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setLoading(true);
       
+      const movieToDelete = movies.find(m => m.id === id);
+      if (!movieToDelete) throw new Error("Movie not found");
+      
       if (databaseConnected) {
+        console.log("Deleting movie from database, ID:", id);
         const { error } = await supabase
           .from('movies')
           .delete()
           .eq('id', id);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error deleting movie:", error);
+          throw error;
+        }
       }
       
       // Remove from local state regardless of database connection
-      const movieTitle = movies.find(m => m.id === id)?.title || "Movie";
       setMovies(prev => prev.filter(m => m.id !== id));
       
       toast({
         title: "Movie deleted",
-        description: `"${movieTitle}" has been removed.`,
+        description: `"${movieToDelete.title}" has been removed.`,
       });
     } catch (err: any) {
       toast({
