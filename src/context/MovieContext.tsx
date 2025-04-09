@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
 import { useToast } from "@/components/ui/use-toast";
@@ -127,7 +128,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added",
-          description: `"${movie.title}" has been added to your database.",
+          description: `"${movie.title}" has been added to your database.`,
         });
       } else {
         const newMovie = {
@@ -138,7 +139,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added (sample mode)",
-          description: `"${movie.title}" has been added to sample data.",
+          description: `"${movie.title}" has been added to sample data.`,
         });
       }
     } catch (err: any) {
