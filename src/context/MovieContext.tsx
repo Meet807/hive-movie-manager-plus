@@ -61,6 +61,10 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setError(null);
         
         console.log("Attempting to fetch movies from Supabase...");
+        
+        // Add a small delay to ensure Supabase client is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const { data, error } = await supabase
           .from('movies')
           .select('*')
@@ -112,9 +116,16 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (databaseConnected) {
         console.log("Adding movie to database:", movie);
+        
+        // Add created_at field for new records
+        const movieWithTimestamp = {
+          ...movie,
+          created_at: new Date().toISOString()
+        };
+        
         const { data, error } = await supabase
           .from('movies')
-          .insert(movie)
+          .insert(movieWithTimestamp)
           .select()
           .single();
           

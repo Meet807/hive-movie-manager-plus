@@ -5,7 +5,13 @@ import { Database } from '@/types/supabase';
 // Using the provided Supabase URL and public anon key
 export const supabase = createClient<Database>(
   'https://fynkygotvuqlsiqmpmbz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5bmt5Z290dnVxbHNpcW1wbWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwOTM4OTksImV4cCI6MjA1OTY2OTg5OX0.l7OOAipajIpDV_MCIjv0YTfrI9SL9hNNgw_mvCCuUGw'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5bmt5Z290dnVxbHNpcW1wbWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwOTM4OTksImV4cCI6MjA1OTY2OTg5OX0.l7OOAipajIpDV_MCIjv0YTfrI9SL9hNNgw_mvCCuUGw',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true
+    }
+  }
 );
 
 // Log connection status without blocking UI
@@ -22,6 +28,6 @@ supabase
       console.log(`Supabase connected successfully! Found ${count} movies.`);
     }
   })
-  .catch((err) => {
+  .catch(err => {
     console.error('Supabase connection failed:', err.message);
   });
