@@ -87,7 +87,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             description: `Successfully loaded ${data?.length || 0} movies from your database.`,
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch movies:", err);
         setMovies(sampleMovies);
         setDatabaseConnected(false);
