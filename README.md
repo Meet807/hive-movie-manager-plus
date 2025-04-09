@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/a649f140-db5c-44fc-b205-fc7e30d08d1f
+**URL**: [https://lovable.dev/projects/a649f140-db5c-44fc-b205-fc7e30d](https://hive-movie-manager-plus.lovable.app/)
 
 ## How can I edit this code?
 
