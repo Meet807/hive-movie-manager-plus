@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MovieContextType {
@@ -69,7 +68,7 @@ const sampleMovies: Movie[] = [
     director: "Lana Wachowski, Lilly Wachowski",
     year: 1999,
     rating: 8.7,
-    poster: "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg",
+    poster: "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDlhZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg",
     description: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers."
   },
   {
@@ -96,7 +95,7 @@ const sampleMovies: Movie[] = [
     director: "Peter Jackson",
     year: 2003,
     rating: 9.0,
-    poster: "https://m.media-amazon.com/images/M/MV5BNzA5ZDNlZWMtM2NhNS00NDJjLTk4NDItYTRmY2EwMWZlMTY3XkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_.jpg",
+    poster: "https://m.media-amazon.com/images/M/MV5BNzA5ZDNlZWMtM2NhNS00NDQ0Zi00ZTVkLWI0MTEtMDlhZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg",
     description: "Gandalf and Aragorn lead the World of Men against Sauron's army to draw his gaze from Frodo and Sam as they approach Mount Doom with the One Ring."
   },
   {
@@ -228,12 +227,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           console.error("Database error:", error);
           setMovies(sampleMovies);
           setDatabaseConnected(false);
-          
-          toast({
-            title: "Using sample data",
-            description: "Unable to connect to database. Using sample data instead.",
-            variant: "destructive",
-          });
         } else {
           console.log("Movies loaded from database:", data);
           // Convert year from string to number if needed
@@ -255,12 +248,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error("Failed to fetch movies:", err);
         setMovies(sampleMovies);
         setDatabaseConnected(false);
-        
-        toast({
-          title: "Error connecting to database",
-          description: "Using sample data instead. Please check console for details.",
-          variant: "destructive",
-        });
       } finally {
         setLoading(false);
       }
@@ -307,7 +294,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added",
-          description: `"${movie.title}" has been added to your database.`,
+          description: `"${movie.title}" has been added to your database.",
         });
       } else {
         const newMovie = {
@@ -318,7 +305,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added (sample mode)",
-          description: `"${movie.title}" has been added to sample data.`,
+          description: `"${movie.title}" has been added to sample data.",
         });
       }
     } catch (err: any) {
