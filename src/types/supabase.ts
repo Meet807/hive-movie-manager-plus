@@ -13,32 +13,32 @@ export interface Database {
       movies: {
         Row: {
           id: string
-          created_at: string
+          created_at?: string
           title: string
-          director: string
-          year: number
-          rating: number
-          poster: string
+          director: string | null
+          year: string | null
+          rating: number | null
+          poster: string | null
           description: string | null
         }
         Insert: {
           id?: string
           created_at?: string
           title: string
-          director: string
-          year: number
-          rating: number
-          poster: string
+          director?: string | null
+          year?: string | null
+          rating?: number | null
+          poster?: string | null
           description?: string | null
         }
         Update: {
           id?: string
           created_at?: string
           title?: string
-          director?: string
-          year?: number
-          rating?: number
-          poster?: string
+          director?: string | null
+          year?: string | null
+          rating?: number | null
+          poster?: string | null
           description?: string | null
         }
       }

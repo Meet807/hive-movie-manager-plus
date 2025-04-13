@@ -6,5 +6,5 @@ export interface Movie {
   year: number;
   rating: number;
   poster: string | null;
-  description?: string | null;
+  description: string | null;
 }

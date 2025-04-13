@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Movie } from "@/types/movie";
 import { useToast } from "@/hooks/use-toast";
@@ -214,8 +213,6 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         console.log("Attempting to fetch movies from Supabase...");
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         const { data, error } = await supabase
           .from('movies')
           .select('*')
@@ -261,16 +258,16 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (databaseConnected) {
         console.log("Adding movie to database:", movie);
         
-        // Don't need to specify ID, Supabase will generate one
+        // Fix the insert operation to match the database schema
         const { data, error } = await supabase
           .from('movies')
           .insert({
             title: movie.title,
-            director: movie.director,
-            year: movie.year.toString(), // Convert number to string for Supabase
+            director: movie.director || null,
+            year: movie.year.toString(),
             rating: movie.rating,
-            poster: movie.poster,
-            description: movie.description
+            poster: movie.poster || null,
+            description: movie.description || null
           })
           .select()
           .single();
@@ -292,7 +289,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added",
-          description: `"${movie.title}" has been added to your database.`,
+          description: `"${movie.title}" has been added to your database.",
         });
       } else {
         const newMovie = {
@@ -303,7 +300,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         toast({
           title: "Movie added (sample mode)",
-          description: `"${movie.title}" has been added to sample data.`,
+          description: `"${movie.title}" has been added to sample data.",
         });
       }
     } catch (err: any) {
@@ -328,7 +325,7 @@ export const MovieProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .update({
             title: movie.title,
             director: movie.director,
-            year: movie.year.toString(), // Convert number to string for Supabase
+            year: movie.year.toString(),
             rating: movie.rating,
             poster: movie.poster,
             description: movie.description
