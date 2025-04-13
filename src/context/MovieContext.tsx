@@ -14,7 +14,6 @@ interface MovieContextType {
 
 const MovieContext = createContext<MovieContextType | undefined>(undefined);
 
-// Sample movies with corrected types
 const sampleMovies: Movie[] = [
   {
     id: "1",
@@ -43,7 +42,6 @@ const sampleMovies: Movie[] = [
     poster: "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg",
     description: "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice."
   },
-  // Additional Hollywood movies
   {
     id: "4",
     title: "Pulp Fiction",
@@ -68,7 +66,7 @@ const sampleMovies: Movie[] = [
     director: "Lana Wachowski, Lilly Wachowski",
     year: 1999,
     rating: 8.7,
-    poster: "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDlhZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg",
+    poster: "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDlhZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_.jpg",
     description: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers."
   },
   {
@@ -108,7 +106,6 @@ const sampleMovies: Movie[] = [
     description: "An insomniac office worker and a devil-may-care soap maker form an underground fight club that evolves into much more."
   },
   
-  // Bollywood movies
   {
     id: "11",
     title: "3 Idiots",
